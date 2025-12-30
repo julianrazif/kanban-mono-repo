@@ -12,7 +12,7 @@
 * The constructor-based injection clearly communicates what are the dependencies of a class without having to look into the source code.
 * Spring Boot provides extension points as builders such as `RestClient.Builder`, `ChatClient.Builder`, etc. Using constructor-injection, we can do the customization and initialize the actual dependency.
 
-```java
+```
 @Service
 public class OrderService {
    private final OrderRepository orderRepository;
@@ -143,7 +143,7 @@ public class OrderService {
 ## 13. Use random port for integration tests
 * When writing integration tests, start the application on a random available port to avoid port conflicts by annotating the test class with:
 
-    ```java
+    ```
     @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
     ```
 
@@ -161,7 +161,7 @@ public class OrderService {
 * **Guard expensive log calls.**  
   When building verbose messages at `DEBUG` or `TRACE` level, especially those involving method calls or complex string concatenations, wrap them in a level check or use suppliers:
 
-```java
+```
 if (logger.isDebugEnabled()) {
     logger.debug("Detailed state: {}", computeExpensiveDetails());
 }
