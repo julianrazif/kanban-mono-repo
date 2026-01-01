@@ -1,184 +1,153 @@
-# Spring Boot Guidelines
+# Kanban - Development Guidelines
 
-## 1. Prefer Constructor Injection over Field/Setter Injection
-* Declare all the mandatory dependencies as `final` fields and inject them through the constructor.
-* Spring will auto-detect if there is only one constructor, no need to add `@Autowired` on the constructor.
-* Avoid field/setter injection in production code.
+This document outlines the architectural principles, coding standards, and best practices for the Kanban project.
 
-**Explanation:**
+## 1. Architecture Guidelines
 
-* Making all the required dependencies as `final` fields and injecting them through constructor make sure that the object is always in a properly initialized state using the plain Java language feature itself. No need to rely on any framework-specific initialization mechanism.
-* You can write unit tests without relying on reflection-based initialization or mocking.
-* The constructor-based injection clearly communicates what are the dependencies of a class without having to look into the source code.
-* Spring Boot provides extension points as builders such as `RestClient.Builder`, `ChatClient.Builder`, etc. Using constructor-injection, we can do the customization and initialize the actual dependency.
+### Overview
+The Kanban application is a RESTful web service written in Java using Spring Boot. It follows a hexagonal (ports and adapters) architecture organized into three layers: **domain**, **application**, and **infrastructure**.
 
+### Architectural Principles
+1. **Separation of Concerns**: Separate business logic from technical implementations.
+2. **Dependency Inversion**: Core business logic depends on abstractions, not concrete implementations.
+3. **Domain-Driven Design**: Organize around business domains and capabilities.
+4. **Resilience**: Implement patterns like circuit breaker, retry, and caching for reliability.
+5. **Observability**: Ensure logging, metrics, and tracing are available across layers.
+
+### Layers
+- **Domain Layer**: Entities, value objects, domain services, and outgoing ports. Pure business logic with no framework dependencies.
+- **Application Layer**: Use cases, incoming ports, and DTOs. Coordinates domain operations and mappings.
+- **Infrastructure Layer**: Driving (REST) and driven (Persistence, API clients) adapters. Handles framework-specific details.
+
+### Data Flow
+1. **Request**: Driving adapter receives input.
+2. **Application**: Maps input to Command/Query and invokes use case.
+3. **Domain**: Executes business rules, calling outgoing ports for persistence or external systems.
+4. **Infrastructure**: Driven adapters fulfill port calls.
+5. **Response**: Application maps results to Response DTOs; driving adapter returns them.
+
+### Project Structure
+```text
+src/main/java/com/julian/razif/kanban/
+├── <domain-name>/                   # Feature/Domain-based packaging
+│   ├── domain/                      # model, service, event, port
+│   ├── application/                 # service, port, dto
+│   └── infrastructure/              # web, persistence, messaging, config, mapping
+└── common/                          # exception, security, util
 ```
+
+## 2. Coding Standards
+
+### 2.1 Naming Conventions
+- **Packages**: lowercase, dot-separated (`com.julian.razif.kanban`).
+- **Classes/Interfaces**: PascalCase (`OrderService`).
+- **Methods/Variables**: camelCase (`calculateTotal`).
+- **Constants**: SCREAMING_SNAKE_CASE (`MAX_RETRY_ATTEMPTS`).
+- **JSON Properties**: camelCase.
+
+### 2.2 Java Code Style
+- **Immutability**: Use `record` for DTOs, Commands, and Queries. Use `final` for non-modifiable fields.
+- **Visibility**: Prefer package-private for Spring components (Controllers, Services, Configurations) to reinforce encapsulation.
+- **Null Safety**: Use `Optional<T>` for return types. Avoid `Optional` for parameters. Use `Objects.requireNonNull()` or Jakarta Validation (`@NotNull`) for early validation.
+- **Methods**: Keep methods short and focused on a single responsibility.
+
+## 3. Spring Boot Best Practices
+
+### 3.1 Dependency Injection
+- **Constructor Injection**: Always prefer constructor injection over field or setter injection. This ensures objects are always in a valid state and facilitates testing.
+- **Mandatory Dependencies**: Declare as `final` fields. Spring automatically detects single constructors, so `@Autowired` is unnecessary.
+- **Builders**: Use constructor injection to customize Spring-provided builders.
+
+```java
 @Service
-public class OrderService {
-   private final OrderRepository orderRepository;
-   private final RestClient restClient;
+class OrderService {
+    private final OrderRepository orderRepository;
+    private final RestClient restClient;
 
-   public OrderService(OrderRepository orderRepository, 
-                       RestClient.Builder builder) {
-       this.orderRepository = orderRepository;
-       this.restClient = builder
-               .baseUrl("http://catalog-service.com")
-               .requestInterceptor(new ClientCredentialTokenInterceptor())
-               .build();
-   }
-
-   //... methods
+    public OrderService(OrderRepository orderRepository, RestClient.Builder builder) {
+        this.orderRepository = orderRepository;
+        this.restClient = builder
+                .baseUrl("http://catalog-service.com")
+                .build();
+    }
 }
 ```
 
-## 2. Prefer package-private over public for Spring components
-* Declare Controllers, their request-handling methods, `@Configuration` classes and `@Bean` methods with default (package-private) visibility whenever possible. There's no obligation to make everything `public`.
+### 3.2 Configuration Management
+- **Typed Properties**: Group properties with a common prefix and bind them to `@ConfigurationProperties` classes with validation.
+- **Environment Variables**: Prefer environment variables over profiles for environment-specific settings.
 
-**Explanation:**
+### 3.3 Exception Handling
+- **Centralized Handling**: Use `@RestControllerAdvice` with `@ExceptionHandler` methods to catch specific exceptions globally.
+- **Consistent Responses**: Follow the ProblemDetails format ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)).
+- **Avoid Generic Catch**: Do not catch generic `Exception` unless necessary for top-level logging.
 
-* Keeping classes and methods package-private reinforces encapsulation and abstraction by hiding implementation details from the rest of your application.
-* Spring Boot's classpath scanning will still detect and invoke package-private components (for example, invoking your `@Bean` methods or controller handlers), so you can safely restrict visibility to only what clients truly need. This approach confines your internal APIs to a single package while still allowing the framework to wire up beans and handle HTTP requests.
+### 3.4 Internationalization
+- **ResourceBundles**: Externalize all user-facing text into locale-specific ResourceBundle files instead of hardcoding strings.
 
-## 3. Organize Configuration with Typed Properties
-* Group application-specific configuration properties with a common prefix in `application.properties` or `.yml`.
-* Bind them to `@ConfigurationProperties` classes with validation annotations so that the application will fail fast if the configuration is invalid.
-* Prefer environment variables instead of profiles for passing different configuration properties for different environments.
+## 4. REST API Design
 
-**Explanation:**
+### 4.1 URL and Resource Design
+- **Versioned URLs**: Structure endpoints as `/api/v{version}/resources` (e.g., `/api/v1/tasks`).
+- **Consistency**: Use uniform patterns for collections (`/tasks`) and sub-resources (`/tasks/{id}/comments`).
+- **Pagination**: Implement pagination for unbounded collection resources.
+- **Zalando Guidelines**: Refer to [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) for comprehensive standards.
 
-* By grouping and binding configuration in a single `@ConfigurationProperties` bean, you centralize both the property names and their validation rules. 
-  In contrast, using `@Value("${…}")` across many components forces you to update each injection point whenever a key or validation requirement changes.
-* Overusing profiles to customize the application configuration may lead to unexpected issues due to the order of profiles specified. 
-  As you can enable multiple profiles with different combinations, making sense of the effective application configuration becomes tricky.
+### 4.2 Request and Response Handling
+- **Explicit DTOs**: Never expose entities directly as API responses. Define dedicated request and response records.
+- **Status Codes**: Use `ResponseEntity<T>` to return appropriate HTTP status codes (200 OK, 201 Created, 404 Not Found).
+- **Validation**: Apply Jakarta Validation annotations on request DTOs.
+- **JSON Payload**: Always use a JSON object as the top-level structure.
 
-## 4. Define Clear Transaction Boundaries
-* Define each Service-layer method as a transactional unit.
-* Annotate query-only methods with `@Transactional(readOnly = true)`.
-* Annotate data-modifying methods with `@Transactional`.
-* Limit the code inside each transaction to the smallest necessary scope.
+### 4.3 Business Operations
+- **Command Objects**: Use purpose-built records (e.g., `CreateTaskCommand`) to wrap input data for business operations, clearly communicating required fields.
 
-**Explanation:**
+## 5. Persistence and JPA
 
-* **Single Unit of Work:** Group all database operations for a given use case into one atomic unit, which in Spring Boot is typically a `@Service` annotated class method. This ensures that either all operations succeed or none do.
-* **Connection Reuse:** A `@Transactional` method runs on a single database connection for its entire scope, avoiding the overhead of acquiring and returning connections from the connection pool for each operation.
-* **Read-only Optimizations:** Marking methods as `readOnly = true` disables unnecessary dirty-checking and flushes, improving performance for pure reads.
-* **Reduced Contention:** Keeping transactions as brief as possible minimizes lock duration, lowering the chance of contention in high-traffic applications.
+### 5.1 Transaction Management
+- **Boundaries**: Define Service-layer methods as transactional units.
+- **Optimizations**: Use `@Transactional(readOnly = true)` for queries and `@Transactional` for modifications.
+- **Scope**: Keep transactions as brief as possible to minimize lock contention and connection hold time.
 
-## 5. Disable Open Session in View Pattern
-* While using Spring Data JPA, disable the Open Session in View filter by setting ` spring.jpa.open-in-view=false` in `application.properties/yml.`
+### 5.2 Entity Design and Fetching
+- **OSIV**: Disable Open Session in View (`spring.jpa.open-in-view=false`) to prevent N+1 select problems and force explicit fetching.
+- **Explicit Fetching**: Fetch associations using fetch joins or entity graphs to avoid `LazyInitializationException`.
+- **Repositories**: Use Spring Data JPA repositories. Move complex queries to custom implementations or use Specifications/QueryDSL for dynamic filtering.
 
-**Explanation:**
+## 6. Observability and Security
 
-* Open Session In View (OSIV) filter transparently enables loading the lazy associations while rendering the view or serializing JPA entities. This may lead to the N + 1 Select problem.
-* Disabling OSIV forces you to fetch exactly the associations you need via fetch joins, entity graphs, or explicit queries, and hence you can avoid unexpected N + 1 selects and `LazyInitializationExceptions`.
-
-## 6. Separate Web Layer from Persistence Layer
-* Don't expose entities directly as responses in controllers.
-* Define explicit request and response record (DTO) classes instead.
-* Apply Jakarta Validation annotations on your request records to enforce input rules.
-
-**Explanation:**
-
-* Returning or binding directly to entities couples your public API to your database schema, making future changes riskier.
-* DTOs let you clearly declare exactly which fields clients can send or receive, improving clarity and security.
-* With dedicated DTOs per use case, you can annotate fields for validation without relying on complex validation groups.
-* Use Java bean mapper libraries to simplify DTO conversions. Prefer MapStruct library that can generate bean mapper implementation at compile time so that there won't be runtime reflection overhead.
-
-## 7. Follow REST API Design Principles
-* **Versioned, resource-oriented URLs:** Structure your endpoints as `/api/v{version}/resources` (e.g. `/api/v1/orders`).
-* **Consistent patterns for collections and sub-resources:** Keep URL conventions uniform (for example, `/posts` for posts collection and `/posts/{slug}/comments` for comments of a specific post).
-* **Explicit HTTP status codes via ResponseEntity:** Use `ResponseEntity<T>` to return the correct status (e.g. 200 OK, 201 Created, 404 Not Found) along with the response body.
-* Use pagination for collection resources that may contain an unbounded number of items.
-* The JSON payload must use a JSON object as a top-level data structure to allow for future extension.
-* Use snake_case or camelCase for JSON property names consistently.
-
-**Explanation:**
-
-* **Predictability and discoverability:** Adhering to well-known REST conventions makes your API intuitive. Clients can guess URLs and behaviors without extensive documentation.
-* **Reliable client integrations:** Standardized URL structures, status codes, and headers enable consumers to build against your API with confidence, knowing exactly what each response will look like.
-* For more comprehensive REST API Guidelines, please refer [Zalando RESTful API and Event Guidelines](https://opensource.zalando.com/restful-api-guidelines/).
-
-## 8. Use Command Objects for Business Operations
-* Create purpose-built command records (e.g., `CreateOrderCommand`) to wrap input data.
-* Accept these commands in your service methods to drive creation or update workflows.
-
-**Explanation:**
-
-* Using the use-case specific Command and Query objects clearly communicates what input data is expected from the caller. 
-  Otherwise, the caller had to guess whether they should create and pass the unique key or created_date, or they will be generated by the server/database.
-
-## 9. Centralize Exception Handling
-* Define a global handler class annotated with `@ControllerAdvice` (or `@RestControllerAdvice` for REST APIs) using `@ExceptionHandler` methods to handle specific exceptions.
-* Return consistent error responses. Consider using the ProblemDetails response format ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)).
-
-**Explanation:**
-
-* We should always handle all possible exceptions and return a standard error response instead of throwing exceptions.
-* It is better to centralize the exception handling in a `GlobalExceptionHandler` using `(Rest)ControllerAdvice` instead of duplicating the try/catch exception handling logic across the controllers.
-
-## 10. Actuator
-* Expose only essential actuator endpoints (such as `/health`, `/info`, `/metrics`) without requiring authentication. All the other actuator endpoints must be secured.
-
-**Explanation:**
-
-* Endpoints like `/actuator/health` and `/actuator/metrics` are critical for external health checks and metric collection (e.g., by Prometheus). Allowing these to be accessed anonymously ensures monitoring tools can function without extra credentials. All the remaining endpoints should be secured.
-* In non-production environments (DEV, QA), you can expose additional actuator endpoints such as `/actuator/beans`, `/actuator/loggers` for debugging purpose.
-
-## 11. Internationalization with ResourceBundles
-* Externalize all user-facing text such as labels, prompts, and messages into ResourceBundles rather than embedding them in code.
-
-**Explanation:**
-
-* Hardcoded strings make it difficult to support multiple languages. By placing your labels, error messages, and other text in locale-specific ResourceBundle files, you can maintain separate translations for each language.
-* At runtime, Spring can load the appropriate bundle based on the user's locale or a preference setting, making it simple to add new languages and switch between them dynamically.
-
-## 12. Use Testcontainers for integration tests
-* Spin up real services (databases, message brokers, etc.) in your integration tests to mirror production environments.
-
-**Explanation:**
-
-* Most of the modern applications use a wide range of technologies such as SQL/NoSQL databases, key-value stores, message brokers, etc. Instead of using in-memory variants or mocks, Testcontainers can spin up those dependencies as Docker containers and allow you to test using the same type of dependencies that you will use in the production. This reduces environment inconsistencies and increases confidence in your integration tests.
-* Always use docker images with a specific version of the dependency that you are using in production instead of using the `latest` tag.
-
-## 13. Use random port for integration tests
-* When writing integration tests, start the application on a random available port to avoid port conflicts by annotating the test class with:
-
-    ```
-    @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-    ```
-
-**Explanation:**
-
-* **Avoid conflicts in CI/CD:** In your CI/CD environment, there can be multiple builds running in parallel on the same server/agent. In such cases, it is better to run the integration tests using a random available port rather than a fixed port to avoid port conflicts.
-
-## 14. Logging
-* **Use a proper logging framework.**  
-  Never use `System.out.println()` for application logging. Rely on SLF4J (or a compatible abstraction) and your chosen backend (Logback, Log4j2, etc.).
-
-* **Protect sensitive data.**  
-  Ensure that no credentials, personal information, or other confidential details ever appear in log output.
-
-* **Guard expensive log calls.**  
-  When building verbose messages at `DEBUG` or `TRACE` level, especially those involving method calls or complex string concatenations, wrap them in a level check or use suppliers:
+### 6.1 Logging
+- **Framework**: Use SLF4J with Logback. Never use `System.out.println()`.
+- **Sensitive Data**: Ensure credentials and PII are never logged.
+- **Performance**: Guard expensive log calls or use the Fluent API with Suppliers to avoid unnecessary string concatenation.
 
 ```
-if (logger.isDebugEnabled()) {
-    logger.debug("Detailed state: {}", computeExpensiveDetails());
-}
-
-// using Supplier/Lambda expression
 logger.atDebug()
-	.setMessage("Detailed state: {}")
-	.addArgument(() -> computeExpensiveDetails())
+    .setMessage("State: {}")
+    .addArgument(() -> computeExpensiveDetails())
     .log();
 ```
 
-**Explanation:**
+### 6.2 Security and Actuator
+- **Actuator**: Expose only essential endpoints (`/health`, `/info`, `/metrics`) anonymously. Secure all others.
+- **Authentication**: Use Spring Security with JWT for stateless authentication.
 
-* **Flexible verbosity control:** A logging framework lets you adjust what gets logged and where with the support for tuning log levels per environment (development, testing, production).
+## 7. Testing Strategy
+- **Testcontainers**: Use real services (databases, brokers) in integration tests via Testcontainers with specific version tags.
+- **Random Port**: Avoid port conflicts by using a random available port.
 
-* **Rich contextual metadata:** Beyond the message itself, you can capture class/method names, thread IDs, process IDs, and any custom context via MDC, aiding diagnosis.
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class IntegrationTest {
+}
+```
 
-* **Multiple outputs and formats:** Direct logs to consoles, rolling files, databases, or remote systems, and choose formats like JSON for seamless ingestion into ELK, Loki, or other log-analysis tools.
+- **Layered Testing**: 
+  - **Domain**: Pure unit tests (no Spring).
+  - **Application**: Use-case tests with fakes/stubs for ports.
+  - **Infrastructure**: Integration tests for adapters.
 
-* **Better tooling and analysis:** Structured logs and controlled log levels make it easier to filter noise, automate alerts, and visualize application behavior in real time.
+## 8. Caching and Performance
+- **Caching**: Use `@Cacheable` for expensive, infrequently changing data. Configure a proper `CacheManager` (e.g., Caffeine, Redis).
+- **Invalidation**: Define clear TTL or explicit eviction strategies.
+- **Performance**: Minimize transaction scope and avoid unnecessary object creation in hot loops.
