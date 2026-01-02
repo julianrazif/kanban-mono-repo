@@ -2,7 +2,6 @@ package com.julian.razif.kanban.common.security;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Base64;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -14,8 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.Security;
 
-@Component
-class EncryptDecryptUtils {
+public class EncryptDecryptUtils {
 
   public static final String BOUNCY_CASTLE_PROVIDER = "BC";
 
@@ -30,7 +28,7 @@ class EncryptDecryptUtils {
   public static final int ITERATION_COUNT = 10000;
   public static final int SALT_LENGTH = 16;
 
-  EncryptDecryptUtils() {
+  public EncryptDecryptUtils() {
     Security.addProvider(new BouncyCastleProvider());
   }
 

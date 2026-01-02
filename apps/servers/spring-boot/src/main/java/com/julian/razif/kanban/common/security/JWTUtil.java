@@ -7,7 +7,6 @@ import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
@@ -22,8 +21,7 @@ import java.util.Map;
  * @version 1.0
  * @since version 1.0
  */
-@Component
-class JWTUtil {
+public class JWTUtil {
 
   private static final Logger log = LoggerFactory.getLogger(JWTUtil.class);
 
@@ -35,7 +33,7 @@ class JWTUtil {
 
   private final JwtProperties jwtProperties;
 
-  JWTUtil(
+  public JWTUtil(
     Decryption decryption,
     JwtProperties jwtProperties) {
     this.jwtProperties = jwtProperties;

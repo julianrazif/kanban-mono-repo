@@ -1,17 +1,20 @@
 package com.julian.razif.kanban.common.security;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 
-@Component
-@RequiredArgsConstructor
-class Decryption {
+public class Decryption {
 
   private final EncryptDecryptUtils encryptDecryptUtils;
   private final SecurityProperties securityProperties;
+
+  public Decryption(
+    EncryptDecryptUtils encryptDecryptUtils,
+    SecurityProperties securityProperties) {
+
+    this.encryptDecryptUtils = encryptDecryptUtils;
+    this.securityProperties = securityProperties;
+  }
 
   public String getDecryptedKey() throws Exception {
     String salted = encryptDecryptUtils.bytesToHex(encryptDecryptUtils.generateSalt()).substring(0, 8);

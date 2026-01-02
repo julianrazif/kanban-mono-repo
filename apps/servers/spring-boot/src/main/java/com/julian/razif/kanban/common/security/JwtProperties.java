@@ -6,7 +6,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "kanban.security.jwt")
-record JwtProperties(
+public record JwtProperties(
   @NotBlank
   String secret,
   long expirationInMs

@@ -6,7 +6,7 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "kanban.security")
-record SecurityProperties(
+public record SecurityProperties(
   @NotBlank
   String encryptionPassword
 ) {
