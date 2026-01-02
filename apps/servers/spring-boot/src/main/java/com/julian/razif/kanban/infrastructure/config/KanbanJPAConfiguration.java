@@ -22,6 +22,7 @@ import org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.security.GeneralSecurityException;
 import java.util.Properties;
 
 @Configuration
@@ -33,7 +34,7 @@ import java.util.Properties;
   transactionManagerRef = "kanbanTransactionManager"
 )
 @RequiredArgsConstructor
-public class KanbanJPAConfiguration {
+class KanbanJPAConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(KanbanJPAConfiguration.class);
 
@@ -113,7 +114,7 @@ public class KanbanJPAConfiguration {
    */
   @Primary
   @Bean(name = "kanbanDataSource")
-  public HikariDataSource kanbanDataSource() {
+  HikariDataSource kanbanDataSource() {
     try {
       log.info("Configuring kanban datasource with hikari connection pool");
 
@@ -134,13 +135,16 @@ public class KanbanJPAConfiguration {
       log.info("JDBC URL: {}", url);
 
       return dataSource;
+    } catch (GeneralSecurityException e) {
+      log.error("Security error during kanban datasource configuration: {}", e.getMessage());
+      throw new IllegalStateException("Failed to decrypt database credentials", e);
     } catch (Exception e) {
-      log.error("Failed to configure kanban datasource", e);
-      throw new RuntimeException("Failed to configure kanban datasource: " + e.getMessage(), e);
+      log.error("Unexpected error during kanban datasource configuration", e);
+      throw new IllegalStateException("Failed to configure kanban datasource", e);
     }
   }
 
-  public HikariConfig getHikariConfig(
+  HikariConfig getHikariConfig(
     @Nonnull String url,
     @Nonnull String username,
     @Nonnull String password) {
@@ -198,7 +202,7 @@ public class KanbanJPAConfiguration {
    */
   @Primary
   @Bean(name = "kanbanEntityManagerFactory")
-  public LocalContainerEntityManagerFactoryBean kanbanEntityManagerFactory(
+  LocalContainerEntityManagerFactoryBean kanbanEntityManagerFactory(
     EntityManagerFactoryBuilder builder,
     @Qualifier("kanbanDataSource") DataSource dataSource) {
 
@@ -242,7 +246,7 @@ public class KanbanJPAConfiguration {
    */
   @Primary
   @Bean(name = "kanbanEntityManager")
-  public EntityManager kanbanEntityManager(
+  EntityManager kanbanEntityManager(
     @Qualifier("kanbanEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
     return entityManagerFactory.createEntityManager();
   }
@@ -255,7 +259,7 @@ public class KanbanJPAConfiguration {
    */
   @Primary
   @Bean(name = "kanbanTransactionManager")
-  public PlatformTransactionManager kanbanTransactionManager(
+  PlatformTransactionManager kanbanTransactionManager(
     @Qualifier("kanbanEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
 
     JpaTransactionManager transactionManager = new JpaTransactionManager(entityManagerFactory);
@@ -282,7 +286,7 @@ public class KanbanJPAConfiguration {
     };
   }
 
-  public Properties getDsProperties() {
+  Properties getDsProperties() {
     Properties dsProperties = new Properties();
 
     // Prepared Statement Cache

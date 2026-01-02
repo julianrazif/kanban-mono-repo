@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import javax.crypto.SecretKey;
+import java.security.GeneralSecurityException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -26,7 +27,7 @@ class DecryptionTest {
    * Tests password decryption using mocked properties
    */
   @Test
-  void testGetDecryptedKey() throws Exception {
+  void testGetDecryptedKey() throws GeneralSecurityException {
     String rawPassword = "rawPassword123";
     String salt = encryptDecryptUtils.bytesToHex(encryptDecryptUtils.generateSalt()).substring(0, 8);
     String maskedPassword = encryptDecryptUtils.encodeToString(rawPassword, salt, EncryptDecryptUtils.ITERATION_COUNT);
@@ -41,7 +42,7 @@ class DecryptionTest {
    * Tests secret key generation from masked password
    */
   @Test
-  void testGenerateSecretKey() throws Exception {
+  void testGenerateSecretKey() throws GeneralSecurityException {
     String rawPassword = "rawPassword123";
     String salt = encryptDecryptUtils.bytesToHex(encryptDecryptUtils.generateSalt()).substring(0, 8);
     String maskedPassword = encryptDecryptUtils.encodeToString(rawPassword, salt, EncryptDecryptUtils.ITERATION_COUNT);
@@ -56,7 +57,7 @@ class DecryptionTest {
    * Tests round-trip encoding and decoding of text
    */
   @Test
-  void testEncodeDecode() throws Exception {
+  void testEncodeDecode() throws GeneralSecurityException {
     String rawPassword = "rawPassword123";
     String salt = encryptDecryptUtils.bytesToHex(encryptDecryptUtils.generateSalt()).substring(0, 8);
     String maskedPassword = encryptDecryptUtils.encodeToString(rawPassword, salt, EncryptDecryptUtils.ITERATION_COUNT);

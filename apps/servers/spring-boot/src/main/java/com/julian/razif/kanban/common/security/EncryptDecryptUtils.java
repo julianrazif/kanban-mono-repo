@@ -3,6 +3,9 @@ package com.julian.razif.kanban.common.security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Base64;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -11,22 +14,25 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PBEParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Security;
 
 public class EncryptDecryptUtils {
 
-  public static final String BOUNCY_CASTLE_PROVIDER = "BC";
+  private static final Logger log = LoggerFactory.getLogger(EncryptDecryptUtils.class);
 
-  public static final String AES = "AES";
-  public static final String PASS_MASK_PREFIX = "MASK-";
-  public static final String AES_CBC_PKCS5Padding = "AES/CBC/PKCS5Padding";
-  public static final int KEY_SIZE = 256;
+  static final String BOUNCY_CASTLE_PROVIDER = "BC";
 
-  public static final String PBKDF2_WITH_HMAC_SHA256 = "PBKDF2WithHmacSHA256";
-  public static final String PBE_WITH_MD5_AND_DES = "PBEwithMD5andDES";
+  static final String AES = "AES";
+  static final String PASS_MASK_PREFIX = "MASK-";
+  static final String AES_CBC_PKCS5Padding = "AES/CBC/PKCS5Padding";
+  static final int KEY_SIZE = 256;
 
-  public static final int ITERATION_COUNT = 10000;
-  public static final int SALT_LENGTH = 16;
+  static final String PBKDF2_WITH_HMAC_SHA256 = "PBKDF2WithHmacSHA256";
+  static final String PBE_WITH_MD5_AND_DES = "PBEwithMD5andDES";
+
+  static final int ITERATION_COUNT = 10000;
+  static final int SALT_LENGTH = 16;
 
   public EncryptDecryptUtils() {
     Security.addProvider(new BouncyCastleProvider());
@@ -40,7 +46,7 @@ public class EncryptDecryptUtils {
     return new byte[SALT_LENGTH];
   }
 
-  public SecretKey generateSecretKey(String password) throws Exception {
+  public SecretKey generateSecretKey(String password) throws GeneralSecurityException {
     PBEKeySpec pbeKeySpec = new PBEKeySpec(password.toCharArray(), generateSalt(), ITERATION_COUNT, KEY_SIZE);
     SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(PBKDF2_WITH_HMAC_SHA256);
     return secretKeyFactory.generateSecret(pbeKeySpec);
@@ -49,32 +55,32 @@ public class EncryptDecryptUtils {
   /**
    * Encrypts data using a provided secret key
    */
-  public byte[] encrypt(byte[] data, SecretKey secretKey) throws Exception {
+  public byte[] encrypt(byte[] data, SecretKey secretKey) throws GeneralSecurityException {
     SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getEncoded(), AES);
     Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5Padding, BOUNCY_CASTLE_PROVIDER);
     cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, new IvParameterSpec(generateIv()));
     return cipher.doFinal(data);
   }
 
-  public String encodeToString(byte[] data, SecretKey secretKey) throws Exception {
+  public String encodeToString(byte[] data, SecretKey secretKey) throws GeneralSecurityException {
     return Base64.toBase64String(encrypt(data, secretKey));
   }
 
   /**
    * Decrypts secret using a provided secret key
    */
-  public byte[] decrypt(byte[] secret, SecretKey secretKey) throws Exception {
+  public byte[] decrypt(byte[] secret, SecretKey secretKey) throws GeneralSecurityException {
     SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getEncoded(), AES);
     Cipher cipher = Cipher.getInstance(AES_CBC_PKCS5Padding, BOUNCY_CASTLE_PROVIDER);
     cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(generateIv()));
     return cipher.doFinal(secret);
   }
 
-  public String decodeToString(String secret, SecretKey secretKey) throws Exception {
+  public String decodeToString(String secret, SecretKey secretKey) throws GeneralSecurityException {
     return new String(decrypt(Base64.decode(secret), secretKey), StandardCharsets.UTF_8);
   }
 
-  public String decodeToString(String secret, String salt, int iterationCount) throws Exception {
+  public String decodeToString(String secret, String salt, int iterationCount) throws GeneralSecurityException {
     if (secret == null) {
       return null;
     }
@@ -97,7 +103,7 @@ public class EncryptDecryptUtils {
   /**
    * Encodes secret using fixed password and provided salt
    */
-  public String encodeToString(String secret, String salt, int iterationCount) throws Exception {
+  public String encodeToString(String secret, String salt, int iterationCount) throws GeneralSecurityException {
     char[] password = "somearbitrarycrazystringthatdoesnotmatter".toCharArray();
     PBEParameterSpec pbeParameterSpec = new PBEParameterSpec(salt.getBytes(), iterationCount);
     PBEKeySpec pbeKeySpec = new PBEKeySpec(password);

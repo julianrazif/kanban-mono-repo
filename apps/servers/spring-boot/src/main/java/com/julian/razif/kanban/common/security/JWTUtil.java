@@ -1,6 +1,7 @@
 package com.julian.razif.kanban.common.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.Nonnull;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import javax.crypto.SecretKey;
+import java.security.GeneralSecurityException;
 import java.util.Date;
 import java.util.Map;
 
@@ -40,8 +42,12 @@ public class JWTUtil {
     try {
       String decode = decryption.decode(jwtProperties.secret());
       this.key = Keys.hmacShaKeyFor(decode.getBytes());
+    } catch (GeneralSecurityException e) {
+      log.error("Failed to initialize JWT key due to security error: {}", e.getMessage());
+      throw new IllegalStateException("Failed to initialize JWT key", e);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to initialize JWT key", e);
+      log.error("Unexpected error during JWT initialization: {}", e.getMessage());
+      throw new IllegalStateException("Unexpected error during JWT initialization", e);
     }
   }
 
@@ -63,7 +69,7 @@ public class JWTUtil {
         .build()
         .parseSignedClaims(token)
         .getPayload();
-    } catch (Exception e) {
+    } catch (JwtException | IllegalArgumentException e) {
       log.error("Invalid JWT token: {}", e.getMessage());
       throw new BadCredentialsException("Invalid JWT token", e);
     }

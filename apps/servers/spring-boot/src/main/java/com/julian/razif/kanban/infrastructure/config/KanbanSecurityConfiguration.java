@@ -5,15 +5,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class KanbanSecurityConfugration {
+class KanbanSecurityConfiguration {
 
   @Bean
-  public EncryptDecryptUtils encryptDecryptUtils() {
+  EncryptDecryptUtils encryptDecryptUtils() {
     return new EncryptDecryptUtils();
   }
 
   @Bean
-  public Decryption decryption(
+  Decryption decryption(
     EncryptDecryptUtils encryptDecryptUtils,
     SecurityProperties securityProperties) {
 
@@ -21,7 +21,7 @@ public class KanbanSecurityConfugration {
   }
 
   @Bean
-  public JWTUtil jwtUtil(
+  JWTUtil jwtUtil(
     Decryption decryption,
     JwtProperties jwtProperties) {
 

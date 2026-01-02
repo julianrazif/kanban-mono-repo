@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 
+import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,10 +39,10 @@ class JWTUtilTest {
   @Test
   void shouldThrowExceptionWhenInitializationFails() throws Exception {
     when(jwtProperties.secret()).thenReturn("errorSecret");
-    when(decryption.decode("errorSecret")).thenThrow(new RuntimeException("Decryption failed"));
+    when(decryption.decode("errorSecret")).thenThrow(new GeneralSecurityException("Decryption failed"));
 
     assertThatThrownBy(() -> new JWTUtil(decryption, jwtProperties))
-      .isInstanceOf(RuntimeException.class)
+      .isInstanceOf(IllegalStateException.class)
       .hasMessage("Failed to initialize JWT key");
   }
 

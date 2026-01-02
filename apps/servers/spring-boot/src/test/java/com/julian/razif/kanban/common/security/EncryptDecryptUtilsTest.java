@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -101,11 +102,11 @@ class EncryptDecryptUtilsTest {
     byte[] encryptedData = utils.encrypt(originalData, secretKey);
 
     // Decrypting with a wrong key should fail or return garbage
-    assertThrows(Exception.class, () -> utils.decrypt(encryptedData, wrongKey));
+    assertThrows(GeneralSecurityException.class, () -> utils.decrypt(encryptedData, wrongKey));
   }
 
   @Test
-  void testDecodeWithCorruptedData() throws Exception {
+  void testDecodeWithCorruptedData() throws GeneralSecurityException {
     String password = "testPassword";
     SecretKey secretKey = utils.generateSecretKey(password);
 
@@ -113,14 +114,14 @@ class EncryptDecryptUtilsTest {
   }
 
   @Test
-  void testMaskedDecodeWithWrongSalt() throws Exception {
+  void testMaskedDecodeWithWrongSalt() throws GeneralSecurityException {
     String originalText = "Password123";
     String salt = "testSalt";
     int iterations = 1000;
 
     String encoded = utils.encodeToString(originalText, salt, iterations);
 
-    assertThrows(Exception.class, () -> utils.decodeToString(encoded, "wrongSalt", iterations));
+    assertThrows(GeneralSecurityException.class, () -> utils.decodeToString(encoded, "wrongSalt", iterations));
   }
 
   @Test
