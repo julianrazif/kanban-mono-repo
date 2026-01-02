@@ -93,7 +93,7 @@ class JWTUtil {
    * @param username The username to set as the token subject
    * @return A signed JWT token string with all specified claims and metadata
    */
-  private String generateToken(
+  public String generateToken(
     @Nonnull Map<String, Object> claims,
     @Nonnull String username) {
 
@@ -115,7 +115,7 @@ class JWTUtil {
    * @param username The username to set as the token subject
    * @return A signed JWT token string with no expiration date
    */
-  private String generateNonExpiredToken(
+  public String generateNonExpiredToken(
     @Nonnull Map<String, Object> claims,
     @Nonnull String username) {
 
