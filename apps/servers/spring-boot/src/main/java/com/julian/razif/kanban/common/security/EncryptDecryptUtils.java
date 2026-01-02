@@ -30,10 +30,7 @@ class EncryptDecryptUtils {
   public static final int ITERATION_COUNT = 10000;
   public static final int SALT_LENGTH = 16;
 
-  private final SecurityProperties securityProperties;
-
-  EncryptDecryptUtils(SecurityProperties securityProperties) {
-    this.securityProperties = securityProperties;
+  EncryptDecryptUtils() {
     Security.addProvider(new BouncyCastleProvider());
   }
 
@@ -80,9 +77,12 @@ class EncryptDecryptUtils {
   }
 
   public String decodeToString(String secret, String salt, int iterationCount) throws Exception {
+    if (secret == null) {
+      return null;
+    }
     // Decrypts masked secret using fixed password and provided parameters
     if (secret.startsWith(PASS_MASK_PREFIX)) {
-      char[] password = securityProperties.encryptionPassword().toCharArray();
+      char[] password = "somearbitrarycrazystringthatdoesnotmatter".toCharArray();
       PBEParameterSpec pbeParameterSpec = new PBEParameterSpec(salt.getBytes(), iterationCount);
       PBEKeySpec pbeKeySpec = new PBEKeySpec(password);
       SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(PBE_WITH_MD5_AND_DES);
@@ -100,7 +100,7 @@ class EncryptDecryptUtils {
    * Encodes secret using fixed password and provided salt
    */
   public String encodeToString(String secret, String salt, int iterationCount) throws Exception {
-    char[] password = securityProperties.encryptionPassword().toCharArray();
+    char[] password = "somearbitrarycrazystringthatdoesnotmatter".toCharArray();
     PBEParameterSpec pbeParameterSpec = new PBEParameterSpec(salt.getBytes(), iterationCount);
     PBEKeySpec pbeKeySpec = new PBEKeySpec(password);
     SecretKeyFactory secretKeyFactory = SecretKeyFactory.getInstance(PBE_WITH_MD5_AND_DES);
@@ -112,6 +112,9 @@ class EncryptDecryptUtils {
   }
 
   public String bytesToHex(byte[] hash) {
+    if (hash == null) {
+      return null;
+    }
     StringBuilder hexString = new StringBuilder();
     // Converts bytes to hexadecimal string representation
     for (byte b : hash) {
