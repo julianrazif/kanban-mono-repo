@@ -6,7 +6,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,7 +32,6 @@ import java.util.Properties;
   entityManagerFactoryRef = "kanbanEntityManagerFactory",
   transactionManagerRef = "kanbanTransactionManager"
 )
-@RequiredArgsConstructor
 class KanbanJPAConfiguration {
 
   private static final Logger log = LoggerFactory.getLogger(KanbanJPAConfiguration.class);
@@ -105,6 +103,10 @@ class KanbanJPAConfiguration {
 
   @Value("${db.hikari.data-source-properties.tcpKeepAlive:true}")
   private boolean tcpKeepAlive;
+
+  KanbanJPAConfiguration(Decryption decryption) {
+    this.decryption = decryption;
+  }
 
   /**
    * Creates and configures the Hikari data source for Kanban database connections.
