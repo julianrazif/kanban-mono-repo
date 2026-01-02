@@ -35,10 +35,13 @@ class JWTUtil {
 
   private final JwtProperties jwtProperties;
 
-  JWTUtil(JwtProperties jwtProperties) {
+  JWTUtil(
+    Decryption decryption,
+    JwtProperties jwtProperties) {
     this.jwtProperties = jwtProperties;
     try {
-      this.key = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes());
+      String decode = decryption.decode(jwtProperties.secret());
+      this.key = Keys.hmacShaKeyFor(decode.getBytes());
     } catch (Exception e) {
       throw new RuntimeException("Failed to initialize JWT key", e);
     }
@@ -55,6 +58,7 @@ class JWTUtil {
   public Claims getAllClaimsFromToken(
     @Nonnull String token) {
 
+    // Parses token; returns claims; throws on invalid token
     try {
       return Jwts.parser()
         .verifyWith(key)
@@ -93,6 +97,7 @@ class JWTUtil {
     @Nonnull Map<String, Object> claims,
     @Nonnull String username) {
 
+    // Builds JWT with claims, subject, issue, and expiration
     return Jwts.builder()
       .claims(claims)
       .subject(username)
