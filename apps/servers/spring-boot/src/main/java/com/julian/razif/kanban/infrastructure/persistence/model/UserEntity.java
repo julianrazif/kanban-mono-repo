@@ -5,12 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "boards")
-public class BoardEntity {
+@Table(name = "users")
+public class UserEntity {
 
   @Setter
   @Getter
@@ -20,13 +18,18 @@ public class BoardEntity {
 
   @Setter
   @Getter
-  @Column(name = "board_name", nullable = false, unique = true)
-  private String name;
+  @Column(nullable = false, unique = true)
+  private String email;
 
   @Setter
   @Getter
-  @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<ColumnEntity> columns = new ArrayList<>();
+  @Column(nullable = false)
+  private String password;
+
+  @Setter
+  @Getter
+  @Column(nullable = false)
+  private String organization = "Hacktiv8";
 
   @Setter
   @Getter

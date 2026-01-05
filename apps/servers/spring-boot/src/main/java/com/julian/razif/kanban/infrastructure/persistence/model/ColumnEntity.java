@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "boards")
-public class BoardEntity {
+@Table(name = "columns")
+public class ColumnEntity {
 
   @Setter
   @Getter
@@ -20,13 +20,19 @@ public class BoardEntity {
 
   @Setter
   @Getter
-  @Column(name = "board_name", nullable = false, unique = true)
+  @Column(name = "column_name", nullable = false)
   private String name;
 
   @Setter
   @Getter
-  @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<ColumnEntity> columns = new ArrayList<>();
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "board_id", nullable = false)
+  private BoardEntity board;
+
+  @Setter
+  @Getter
+  @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<CardEntity> cards = new ArrayList<>();
 
   @Setter
   @Getter
