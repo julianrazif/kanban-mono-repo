@@ -4,6 +4,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.util.Assert;
 
+import java.io.Serial;
 import java.util.Collection;
 
 /**
@@ -20,6 +21,9 @@ import java.util.Collection;
  * @since version 1.0
  */
 public abstract class BaseAuthenticationToken<T> extends AbstractAuthenticationToken {
+
+  @Serial
+  private static final long serialVersionUID = 7284561938472615834L;
 
   /**
    * The principal (user) associated with this authentication token.
