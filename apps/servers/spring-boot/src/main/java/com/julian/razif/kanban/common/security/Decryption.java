@@ -27,6 +27,9 @@ public class Decryption {
   }
 
   public String decode(String secret) throws GeneralSecurityException {
+    if (secret == null || !secret.startsWith("MASK-")) {
+      return secret;
+    }
     return encryptDecryptUtils.decodeToString(secret, generateSecretKey());
   }
 
